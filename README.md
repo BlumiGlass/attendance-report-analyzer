@@ -6,6 +6,7 @@
  ```bash
 
  pip install -r requirements.txt
+ ```
 
 3. התקן את Tesseract מהמדריך כאן:  
 https://github.com/tesseract-ocr/tesseract
@@ -17,6 +18,7 @@ https://github.com/tesseract-ocr/tesseract
 ```bash
 
 python main.py
+```
 
 3. יווצר קובץ `output.pdf` עם וריאציה תקינה.
 
