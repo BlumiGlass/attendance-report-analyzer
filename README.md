@@ -1,12 +1,10 @@
-# \# attendance-report-analyzer
+# attendance-report-analyzer
 
-# 
+## התקנה
 
-# \## התקנה
 
-# 
 
-# ```bash
+ ```bash
 
-# pip install -r requirements.txt
+ pip install -r requirements.txt
 
