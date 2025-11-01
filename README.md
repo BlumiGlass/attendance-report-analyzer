@@ -1,6 +1,4 @@
-# \# attendance-report-analyzer
-
-# 
+ \# attendance-report-analyzer
 
 # \## התקנה
 
