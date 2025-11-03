@@ -1,4 +1,5 @@
-pdfplumber
+pdf2image
+requests
 reportlab
-pandas
-faker
+Pillow
+poppler

@@ -1,101 +1,108 @@
 import random
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, Paragraph, Spacer
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
-def is_report_type1(headers):
-    return "מקום עבודה" in headers and "כניסה" in headers and "100%" in headers
+# רישום גופן Arial בעברית
+pdfmetrics.registerFont(TTFont('Arial', 'arial.ttf'))
 
-def random_time(hour_from=7, hour_to=10):
-    hour = random.randint(hour_from, hour_to)
-    minute = random.choice([0, 15, 30, 45])
-    return f"{hour:02d}:{minute:02d}"
+hebrew_style = ParagraphStyle(
+    'hebrew_style',
+    fontName='Arial',
+    fontSize=11,
+    alignment=2,
+    rightIndent=0,
+)
 
-def time_diff(start, end):
-    h1, m1 = map(int, start.split(":"))
-    h2, m2 = map(int, end.split(":"))
-    return ((h2*60 + m2) - (h1*60 + m1)) / 60
+def fix_hebrew(s):
+    # אופציונלי: הופך רק אם מדובר במחרוזת עברית
+    if s and any('\u0590' <= c <= '\u05EA' for c in s):
+        return s[::-1]
+    return s
 
-def calc_row(day_name):
-    if day_name == "שבת":
-        # דוגמה: כל השעות בשבת
-        enter, exit = "09:00", "17:00"
-        total = time_diff(enter, exit)
-        return [enter, exit, "00:30", "0.00", "0.00", "0.00", f"{total:.2f}"]
-    else:
-        enter = random_time()
-        exit_hour = int(enter[:2]) + random.randint(7, 9)
-        exit = f"{exit_hour:02d}:{enter[3:5]}"
-        break_time = "00:30"
-        total = time_diff(enter, exit) - 0.5
-        h100 = min(total, 8.0)
-        h125 = max(0, min(total - 8, 2))
-        h150 = max(0, total - 10)
-        return [enter, exit, break_time, f"{total:.2f}", f"{h100:.2f}", f"{h125:.2f}", f"{h150:.2f}"]
+def rtl_row(row):
+    return [Paragraph(fix_hebrew(cell), hebrew_style) for cell in row[::-1]]
 
-def handle_report_type1(tables, output_path):
-    # שליפת כותרות
-    headers = tables[0][0]
-    data_rows = tables[0][1:-1]  # כל השורות חוץ מסכום
-    summary_row = tables[0][-1]
-
-    # יצירת נתונים חדשים
+def generate_variation(rows):
     new_rows = []
-    for row in data_rows:
-        date, day, place, *_ = row
-        if day.startswith("יום "):
-            day_name = day[4:]
+    for row in rows[1:]:
+        if not row or len(row) < 11:
+            continue
+        date, day, place, *_ = row[:11]
+        if day.strip() == "שבת":
+            enter, exit = "09:00", "17:00"
+            total = 8.0
         else:
-            day_name = day
-        times = calc_row(day_name)
-        new_row = [date, day, place] + times
-        # הוספת עמודות שבת (רק אם שבת)
-        if day_name == "שבת":
-            new_row += ["0.00", "0.00", f"{float(times[-1]):.2f}"]
-        else:
-            new_row += [times[4], times[5], times[6], "0.00"]
+            start = random.randint(7, 9)
+            end = start + random.randint(7, 9)
+            enter = f"{start:02d}:00"
+            exit = f"{end:02d}:00"
+            total = (end - start) - 0.5
+        total = max(total, 0)
+        h100 = min(total, 8.0)
+        h125 = max(0, min(total-8, 2))
+        h150 = max(0, total-10)
+        shabbat = total if day.strip() == "שבת" else 0.0
+        new_row = [
+            date, day, place, enter, exit, "00:30",
+            f"{total:.2f}", f"{h100:.2f}", f"{h125:.2f}", f"{h150:.2f}", f"{shabbat:.2f}"
+        ]
         new_rows.append(new_row)
+    return new_rows
 
-    # סכימות לעמודות
-    sums = [0.0] * 7
-    for row in new_rows:
-        for i in range(3, 10):
-            sums[i-3] += float(row[i])
-    # שורת סיכום
-    sum_row = [""] * 3 + [f"{s:.2f}" for s in sums]
-    sum_row[0] = "סה\"כ"
-    # מספר ימים מתחת לעמודת תאריך
-    sum_row[1] = str(len(new_rows))
+def sum_columns(rows):
+    sums = [0.0] * 5
+    for row in rows:
+        for idx, col in enumerate(row[6:11]):
+            try:
+                sums[idx] += float(col)
+            except:
+                pass
+    return sums
 
-    # טבלת סיכום שנייה (שורות)
-    table2_titles = [
-        "ימים", "סה\"כ שעות", "שעות 100%", "שעות 125%", "שעות 150%", "שבת 150%", "בונוס", "נסיעות"
+def handle_type1(tables, output_pdf):
+    headers = tables[0][0]
+    rows = tables[0][1:]
+
+    var_rows = generate_variation([headers] + rows)
+    sums = sum_columns(var_rows)
+    sum_row = ["סה\"כ", "", ""] + [""]*3 + [f"{s:.2f}" for s in sums]
+
+    summary_titles = [
+        "ימים", "סה\"כ שעות", "שעות 100%", "שעות 125%", "שעות 150%",
+        "שבת 150%", "בונוס", "נסיעות"
     ]
-    table2_values = [
-        str(len(new_rows)),
+    summary_values = [
+        str(len(var_rows)),
         f"{sums[0]:.2f}", f"{sums[1]:.2f}", f"{sums[2]:.2f}", f"{sums[3]:.2f}", f"{sums[4]:.2f}",
-        f"{random.randint(0,200)}", f"{random.randint(0,300)}"
+        str(random.randint(0, 200)), str(random.randint(0, 300))
     ]
-    summary_table = [[t, v] for t, v in zip(table2_titles, table2_values)]
+    summary_table = [
+        [Paragraph(fix_hebrew(t), hebrew_style), Paragraph(str(v), hebrew_style)]
+        for t, v in zip(summary_titles, summary_values)
+    ]
 
-    # יצירת PDF
-    doc = SimpleDocTemplate(output_path, pagesize=A4)
-    styles = getSampleStyleSheet()
-    elements = []
-    elements.append(Paragraph("שם חברה: דוגמה", styles['Normal']))
-    elements.append(Paragraph("שם עובד: דוגמה", styles['Normal']))
-    elements.append(Spacer(1, 12))
-    main_table = Table([headers] + new_rows + [sum_row])
-    main_table.setStyle(TableStyle([
-        ("GRID", (0,0), (-1,-1), 0.5, colors.black),
-        ("BACKGROUND", (0,0), (-1,0), colors.lightgrey)
-    ]))
-    elements.append(main_table)
-    elements.append(Spacer(1, 24))
-    summary_table_obj = Table(summary_table)
-    summary_table_obj.setStyle(TableStyle([
-        ("GRID", (0,0), (-1,-1), 0.5, colors.black)
-    ]))
-    elements.append(summary_table_obj)
+    doc = SimpleDocTemplate(output_pdf, pagesize=A4, rightMargin=20, leftMargin=20, topMargin=30)
+
+    # בניית הטבלה החדשה בסדר עמודות הפוך!
+    table_data = [rtl_row(headers)]
+    table_data += [rtl_row(row) for row in var_rows]
+    table_data.append(rtl_row(sum_row))
+
+    elements = [
+        Paragraph(fix_hebrew("שם חברה: דוגמה"), hebrew_style),
+        Paragraph(fix_hebrew("שם עובד: דוגמה"), hebrew_style),
+        Spacer(1, 12),
+        Table(table_data, style=[
+                ("GRID", (0,0), (-1,-1), 0.5, colors.black),
+                ("BACKGROUND", (0,0), (-1,0), colors.lightgrey)
+            ]),
+        Spacer(1, 24),
+        Table(summary_table, style=[
+            ("GRID", (0,0), (-1,-1), 0.5, colors.black)
+        ])
+    ]
     doc.build(elements)
