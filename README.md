@@ -22,8 +22,9 @@ pip install pdf2image requests Pillow reportlab
 הגדרת המפתח (Google Vision API)
 יש לשמור את מפתח ה-API בקובץ בשם `config.cfg` במבנה:
 
-Code
+```bash
 API_KEY=your_google_api_key_here
+```
 אל תעלו מפתח גישה למאגרים פומביים!
 
 שימוש
@@ -37,9 +38,8 @@ py main.py path/to/input.pdf
 ```bash
 python main.py input.pdf
 ```
-הפלט יווצר כקובץ PDF נוסף, עם סיומת _output.pdf בשם הקלט, לדוג'
+הפלט יווצר כקובץ PDF נוסף, עם סיומת `_output.pdf` בשם הקלט, לדוג'
 
-Code
 `input.pdf`  →  `input_output.pdf`
 קבצים עיקריים:
 `main.py` - קובץ השליטה העיקרי.
