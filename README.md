@@ -1,29 +1,51 @@
 # attendance-report-analyzer
 
-##1. התקן Python 3.7+  
-2. התקן את התלויות:
+מערכת חכמה לחילוץ, עיבוד והפקת דוחות נוכחות בעברית מקובצי PDF סרוקים או דוחות ויזואלים.
 
- ```bash
+## התקנה
+נדרש Python 3.8+ וספריות:
+- pdf2image
+- requests
+- reportlab
+- Pillow
+- poppler (להמרת PDF לתמונה, יש להוריד ולהגדיר את הפת' ל-bin במערכת)
 
- pip install -r requirements.txt
- ```
-
-3. התקן את Tesseract מהמדריך כאן:  
-https://github.com/tesseract-ocr/tesseract
-
-## שימוש
-
-1. שים קובץ PDF בשם `input.pdf` בתיקייה הראשית.
-2. הרץ:
-```bash
-
-python main.py
+התקנת הספריות:
+```sh
+pip install -r requirements.txt
 ```
+או:
 
-3. יווצר קובץ `output.pdf` עם וריאציה תקינה.
+```bash
+pip install pdf2image requests Pillow reportlab
+```
+הגדרת המפתח (Google Vision API)
+יש לשמור את מפתח ה-API בקובץ בשם config.cfg במבנה:
 
-## הסבר
+Code
+API_KEY=your_google_api_key_here
+אל תעלו מפתח גישה למאגרים פומביים!
 
-- הקוד ממיר את ה-PDF לתמונות, מבצע OCR, מזהה את סוג הדוח, בונה טבלה, ומייצר ואריאציה.
-- אם ה-OCR לא מצליח, נסה לשפר את איכות הסריקה או להשתמש ב-DPI גבוה יותר.
-- תתאים את פונקציות `extract_table` לפי תבנית ה-OCR בפועל.
+שימוש
+הרץ:
+
+```bash
+py main.py path/to/input.pdf
+```
+או
+
+```bash
+python main.py input.pdf
+```
+הפלט יווצר כקובץ PDF נוסף, עם סיומת _output.pdf בשם הקלט, לדוג'
+
+Code
+`input.pdf`  →  `input_output.pdf`
+קבצים עיקריים:
+`main.py` - קובץ השליטה העיקרי.
+`report_type1.py` - טיפול בדוחות מסוג טבלה רגילה.
+`report_type2.py` - טיפול בדוחות עם טבלאות טקסט חופשיות/מבנה בעייתי.
+`config.cfg` - מכיל מפתח גישה ל-Google API.
+הגדרות נוספות:
+יש לשנות את הנתיב ל-Poppler בקובץ `main.py` עבור סביבת Windows שלך.
+תמיכת עברית מלאה דורשת קובץ Arial מהמערכת, שבד"כ קיים בנתיב: C:\Windows\Fonts\arial.ttf.
