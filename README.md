@@ -20,7 +20,7 @@ pip install -r requirements.txt
 pip install pdf2image requests Pillow reportlab
 ```
 הגדרת המפתח (Google Vision API)
-יש לשמור את מפתח ה-API בקובץ בשם config.cfg במבנה:
+יש לשמור את מפתח ה-API בקובץ בשם `config.cfg` במבנה:
 
 Code
 API_KEY=your_google_api_key_here
